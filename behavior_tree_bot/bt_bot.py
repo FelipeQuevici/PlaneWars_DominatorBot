@@ -31,9 +31,14 @@ def setup_behavior_tree():
     defend_planets = Action(defend_planet)
     defensive_plan.child_nodes = [defend_planets]
 
-    offensive_plan = Sequence(name='Offensive Strategy')
+    '''offensive_plan = Sequence(name='Offensive Strategy')
     largest_fleet_check = Check(have_largest_fleet)
     attack = Action(attack_weakest_enemy_planet)
+    offensive_plan.child_nodes = [largest_fleet_check, attack]'''
+
+    offensive_plan = Sequence(name='Offensive Strategy')
+    largest_fleet_check = Check(have_largest_fleet)
+    attack = Action(attack_enemy)
     offensive_plan.child_nodes = [largest_fleet_check, attack]
 
     spread_sequence = Sequence(name='Spread Strategy')
@@ -46,7 +51,7 @@ def setup_behavior_tree():
     spread_action = Action(spread_to_weakest_neutral_planet)
     spread_sequence.child_nodes = [neutral_planet_check, spread_action]'''
 
-    root.child_nodes = [defensive_plan,spread_sequence, attack.copy()]
+    root.child_nodes = [defensive_plan,offensive_plan,spread_sequence]
 
     logging.info('\n' + root.tree_to_string())
     return root
@@ -54,16 +59,19 @@ def setup_behavior_tree():
 
 if __name__ == '__main__':
     logging.basicConfig(filename=__file__[:-3] + '.log', filemode='w', level=logging.DEBUG)
-
+    from timeit import default_timer as time
     behavior_tree = setup_behavior_tree()
     try:
         map_data = ''
         while True:
             current_line = input()
             if len(current_line) >= 2 and current_line.startswith("go"):
+                start = time()
                 planet_wars = PlanetWars(map_data)
                 behavior_tree.execute(planet_wars)
                 finish_turn()
+                timeelapsed = time() - start
+                logging.info("TIME TURNO:" + str(timeelapsed))
                 map_data = ''
             else:
                 map_data += current_line + '\n'
