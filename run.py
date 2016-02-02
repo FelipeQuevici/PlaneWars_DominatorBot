@@ -18,6 +18,7 @@ def show_match(bot, opponent_bot, map_num):
 def test(bot, opponent_bot, map):
     """ Runs an instance of Planet Wars between the two given bots on the specified map. """
     bot_name, opponent_name = bot.split('/')[1].split('.')[0], opponent_bot.split('/')[1].split('.')[0]
+    print("Map:",map)
     print('Running test:',bot_name,'vs',opponent_name)
     command = 'java -jar tools/PlayGame.jar maps/map' + str(map) +'.txt 1000 1000 log.txt ' + \
               '"python ' + bot + '" ' + \
@@ -58,15 +59,31 @@ if __name__ == '__main__':
                  'opponent_bots/aggressive_bot.py',
                  'opponent_bots/defensive_bot.py',
                  'opponent_bots/production_bot.py']
+    '''opponents = ['opponent_bots/spread_bot.py',
+                 'opponent_bots/aggressive_bot.py',
+                 'opponent_bots/defensive_bot.py',
+                 'opponent_bots/production_bot.py']'''
 
     maps = [71, 13, 24, 56, 7]
 
+    from random import choice, randrange
+
+    new_opponent_list = []
+    new_map = []
+    for i in range(1):
+        new_opponent_list.append(choice(opponents))
+        new_map.append(randrange(0,71))
+
+
     my_bot = 'behavior_tree_bot/bt_bot.py'
+    my_bot_1 = 'behavior_tree_bot/bt_bot_1.py'
+
+    #show_match(my_bot,my_bot_1,1)
 
     for opponent, map in zip(opponents, maps):
         # use this command if you want to observe the bots
         show_match(my_bot, opponent, map)
 
         # use this command if you just want the results of the matches reported
-        #test(my_bot, opponent, map)  
+        #test(my_bot, opponent, map)
 
