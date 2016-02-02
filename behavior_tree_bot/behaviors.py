@@ -41,8 +41,71 @@ def spread_to_weakest_neutral_planet(state):
         # (4) Send half the ships from my strongest planet to the weakest enemy planet.
         return issue_order(state, strongest_planet.ID, weakest_planet.ID, strongest_planet.num_ships / 2)
 
+
+def attack_enemy(state):
+    my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
+
+    enemy_planets = [planet for planet in state.enemy_planets()
+                      if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())]
+    enemy_planets.sort(key=lambda p: p.num_ships)
+
+    target_planets = iter(enemy_planets)
+
+    try:
+        my_planet = next(my_planets)
+        target_planet = next(target_planets)
+        while True:
+            required_ships = target_planet.num_ships + \
+                                 state.distance(my_planet.ID, target_planet.ID) * target_planet.growth_rate + 1
+
+            if my_planet.num_ships > required_ships:
+                issue_order(state, my_planet.ID, target_planet.ID, required_ships)
+                my_planet = next(my_planets)
+                target_planet = next(target_planets)
+            else:
+                my_planet = next(my_planets)
+
+    except StopIteration:
+        return False
+
+
+def spread_to_planets(state):
+    my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
+
+    def strength(p):
+        return p.num_ships \
+               - sum(fleet.num_ships for fleet in state.my_fleets() if fleet.destination_planet == p.ID) \
+               + sum(fleet.num_ships for fleet in state.enemy_fleets() if fleet.destination_planet == p.ID)
+
+
+    neutral_planets = [(planet, strength(planet)) for planet in state.neutral_planets() if strength(planet) > 0]
+    logging.info("Criout " + str(neutral_planets))
+    neutral_planets.sort(key=lambda x: state.planets[x[0].ID].num_ships)
+    logging.info("Ordenou " + str(neutral_planets))
+    target_planets = iter(neutral_planets)
+
+    try:
+        my_planet = next(my_planets)
+        target_planet, target_planet_strength = next(target_planets)
+        logging.info("Teste 2" + str(target_planet) + str(target_planet_strength))
+        while True:
+            required_ships = target_planet_strength + 1
+            logging.info("ship" + str(target_planet) + str(target_planet_strength))
+            if 4*my_planet.num_ships/5 > required_ships:
+                issue_order(state, my_planet.ID, target_planet.ID, required_ships)
+                my_planet = next(my_planets)
+                target_planet,target_planet_strength = next(target_planets)
+            else:
+                my_planet = next(my_planets)
+
+    except StopIteration:
+        return False
+
+
 def defend_planet(state):
     fleets_attacking = [fleet for fleet in state.enemy_fleets() if state.planets[fleet.destination_planet].owner == 1]
+    fleets_destinations = [fleet.destination_planet for fleet in fleets_attacking]
+    planets_not_being_attacked = [planet for planet in state.my_planets() if planet.ID not in fleets_destinations]
     message = "\nAll fleets\n" + str(fleets_attacking)
     logging.info(message)
     for fleet in fleets_attacking:
@@ -54,7 +117,7 @@ def defend_planet(state):
         message = "\nTesting fleee" + str(fleet) + " " + str(needed_fleet) + " " + str(total_fleet_defending)
         logging.info(message)
         if needed_fleet > 0:
-            close_planets = [planet for planet in state.my_planets() if state.distance(planet.ID, planet_being_attacked.ID) < fleet.turns_remaining]
+            close_planets = [planet for planet in planets_not_being_attacked if state.distance(planet.ID, planet_being_attacked.ID) < fleet.turns_remaining]
             for close_planet in close_planets:
                 max_can_send = min(close_planet.num_ships/3,needed_fleet)
                 if max_can_send == 0:
