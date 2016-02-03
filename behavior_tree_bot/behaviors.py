@@ -1,4 +1,5 @@
 import sys
+from math import inf, ceil
 sys.path.insert(0, '../')
 from planet_wars import issue_order
 
@@ -60,6 +61,107 @@ def abandon_planet(state):
                 closest = min(other_planets,key=lambda x: state.distance(planet.ID, x.ID))
                 issue_order(state, planet.ID, closest.ID, planet.num_ships)
     return False
+
+def coordinate_attack_on_enemy(state):
+    my_planets = sorted(state.my_planets(), key=lambda p: p.num_ships)
+
+    enemy_planets = [planet for planet in state.enemy_planets()
+                      if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())]
+    enemy_planets.sort(key=lambda p: p.num_ships)
+
+    target_planets = iter(enemy_planets)
+
+    '''my_fleet_size = sum(planet.num_ships for planet in state.my_planets()) \
+                    + sum(fleet.num_ships for fleet in state.my_fleets())
+
+    local_planets = []
+    enemy_distances = {}
+
+    plausible_target = []'''
+
+
+    try:
+        target_planet = next(target_planets)
+        while True:
+            closest_enemy_allies = get_neighbors_within(state, target_planet, enemy_planets, inf)
+            radius = inf
+            if len(closest_enemy_allies) != 0:
+                radius = closest_enemy_allies[0][1]
+            logging.error("cea: " + str(closest_enemy_allies))
+            logging.error("enemy planets: " + str(enemy_planets))
+            logging.error("target planet: " + str(target_planet))
+            best_offesive_planets = get_neighbors_within(state, target_planet, my_planets, radius)
+            if len(best_offesive_planets) > 0:
+                required_ships = 0
+                if radius == inf:
+                    required_ships = target_planet.num_ships + \
+                                 state.distance(best_offesive_planets[-1][0].ID, target_planet.ID) * target_planet.growth_rate + 1
+                else:
+                    required_ships = target_planet.num_ships + \
+                                 state.distance(closest_enemy_allies[0][0].ID, target_planet.ID) * target_planet.growth_rate + 1
+                offesive_planets_scored = score_planets_contributions(state, best_offesive_planets, required_ships)
+                for offesive_planet in offesive_planets_scored:
+                    issue_order(state, offesive_planet[0].ID, target_planet.ID, offesive_planet[1])
+            target_planet = next(target_planets)
+
+    except StopIteration:
+        return False
+    '''
+    #check if there is an enemy planet near one of ours that meets our
+    #evaluation Function
+
+
+
+
+    for enemy_planet in enemy_planets:
+        ships = enemy_planet.num_ships
+        growth_rate = enemy_planet.growth_rate
+
+        nearest_enemy_ally = (None, inf)
+        for other_enemy_planet in enemy_planets:
+            if enemy_planet == other_enemy_planet:
+                continue
+            if nearest_enemy_ally[1] > state.distance()'''
+
+def get_neighbors_within(state, target_planet, planet_set, radius):
+    neighbors = []
+    for planet in planet_set:
+        logging.error("planet: " + str(planet))
+        if planet.ID == target_planet.ID:
+            continue
+        distance = state.distance(target_planet.ID, planet.ID)
+        if  distance < radius:
+            neighbors.append((planet, distance))
+
+    sorted(neighbors)
+    return neighbors
+
+def score_planets_contributions(state, planet_set, coalition_size_needed):
+    scored_planets = []
+    ready_planets = []
+    total_ships_ready = 0
+    for planet in planet_set:
+        logging.error("planet: " + str(planet))
+        if is_under_attack(state, planet):
+            continue
+        total_ships_ready += planet[0].num_ships
+        ready_planets.append(planet[0])
+
+    for planet in ready_planets:
+        logging.error("planet2: " + str(planet))
+        contribution_ratio = planet.num_ships / total_ships_ready
+        contributions = ceil(planet.num_ships * contribution_ratio)
+        scored_planets.append((planet, contributions))
+
+    return scored_planets
+
+def is_under_attack(state, planet):
+    fleets_attacking = [fleet for fleet in state.enemy_fleets() if state.planets[fleet.destination_planet].owner == 1]
+    fleets_destinations = [fleet.destination_planet for fleet in fleets_attacking]
+    if planet in fleets_destinations:
+        return True
+    return False
+
 
 def attack_enemy(state):
     my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
