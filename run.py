@@ -8,8 +8,8 @@ def show_match(bot, opponent_bot, map_num):
         game is replayed via a visual interface.
     """
     command = 'java -jar tools/PlayGame.jar maps/map' + str(map_num) + '.txt 1000 1000 log.txt ' + \
-              '"python ' + bot + '" ' + \
-              '"python ' + opponent_bot + '" ' + \
+              '"python3 ' + bot + '" ' + \
+              '"python3 ' + opponent_bot + '" ' + \
               '| java -jar tools/ShowGame.jar'
     print(command)
     os.system(command)
@@ -21,8 +21,8 @@ def test(bot, opponent_bot, map):
     print("Map:",map)
     print('Running test:',bot_name,'vs',opponent_name)
     command = 'java -jar tools/PlayGame.jar maps/map' + str(map) +'.txt 1000 1000 log.txt ' + \
-              '"python ' + bot + '" ' + \
-              '"python ' + opponent_bot + '" '
+              '"python3 ' + bot + '" ' + \
+              '"python3 ' + opponent_bot + '" '
 
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -70,9 +70,9 @@ if __name__ == '__main__':
 
     new_opponent_list = []
     new_map = []
-    for i in range(1):
+    for i in range(5):
         new_opponent_list.append(choice(opponents))
-        new_map.append(randrange(0,71))
+        new_map.append(randrange(1,71))
 
 
     my_bot = 'behavior_tree_bot/bt_bot.py'

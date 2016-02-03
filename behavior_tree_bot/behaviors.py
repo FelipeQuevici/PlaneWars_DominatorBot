@@ -1,5 +1,5 @@
 import sys
-from math import inf, ceil
+from math import inf, ceil, sqrt
 sys.path.insert(0, '../')
 from planet_wars import issue_order
 
@@ -106,22 +106,6 @@ def coordinate_attack_on_enemy(state):
 
     except StopIteration:
         return False
-    '''
-    #check if there is an enemy planet near one of ours that meets our
-    #evaluation Function
-
-
-
-
-    for enemy_planet in enemy_planets:
-        ships = enemy_planet.num_ships
-        growth_rate = enemy_planet.growth_rate
-
-        nearest_enemy_ally = (None, inf)
-        for other_enemy_planet in enemy_planets:
-            if enemy_planet == other_enemy_planet:
-                continue
-            if nearest_enemy_ally[1] > state.distance()'''
 
 def get_neighbors_within(state, target_planet, planet_set, radius):
     neighbors = []
@@ -136,6 +120,33 @@ def get_neighbors_within(state, target_planet, planet_set, radius):
     sorted(neighbors)
     return neighbors
 
+def get_neighbors_from_point(state, x, y, planet_set, radius):
+    neighbors = []
+    for planet in planet_set:
+        logging.error("planet: " + str(planet))
+        distance = distance_from_point(state, x, y, planet.ID)
+        if  distance < radius:
+            neighbors.append((planet, distance))
+
+    sorted(neighbors)
+    return neighbors
+
+def distance_from_point(state, x, y, destination_planet):
+        destination = state.planets[destination_planet]
+        dx = x - destination.x
+        dy = y - destination.y
+        return int(ceil(sqrt(dx * dx + dy * dy)))
+
+def center_of_territory(state, planet_set):
+    num_of_planets = len(planet_set)
+    center_x = sum([planet.x for planet in planet_set]) / num_of_planets
+    center_y = sum([planet.y for planet in planet_set]) / num_of_planets
+    return (center_x, center_y)
+    
+    
+    
+
+
 def score_planets_contributions(state, planet_set, coalition_size_needed):
     scored_planets = []
     ready_planets = []
@@ -149,7 +160,7 @@ def score_planets_contributions(state, planet_set, coalition_size_needed):
 
     for planet in ready_planets:
         logging.error("planet2: " + str(planet))
-        contribution_ratio = planet.num_ships / total_ships_ready
+        contribution_ratio = planet.num_ships / (total_ships_ready + 1)
         contributions = ceil(planet.num_ships * contribution_ratio)
         scored_planets.append((planet, contributions))
 
@@ -164,7 +175,8 @@ def is_under_attack(state, planet):
 
 
 def attack_enemy(state):
-    my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
+    my_planets = [planet for planet in state.my_planets() if not is_under_attack(state, planet)]
+    my_planets = iter(sorted(my_planets, key=lambda p: p.num_ships))
 
     enemy_planets = [planet for planet in state.enemy_planets()
                       if not any(fleet.destination_planet == planet.ID for fleet in state.my_fleets())]
@@ -195,7 +207,8 @@ def attack_enemy(state):
 
 
 def spread_to_planets(state):
-    my_planets = iter(sorted(state.my_planets(), key=lambda p: p.num_ships))
+    my_planets = [planet for planet in state.my_planets() if not is_under_attack(state, planet)]
+    my_planets = iter(sorted(my_planets, key=lambda p: p.num_ships))
 
     def strength(p):
         return p.num_ships \
@@ -233,6 +246,48 @@ def spread_to_planets(state):
 
         return True
 
+
+def spread_to_nearby_planets(state):
+    my_planets_list = [planet for planet in state.my_planets() if not is_under_attack(state, planet)]
+    my_planets = iter(sorted(my_planets_list, key=lambda p: p.num_ships))
+
+    def strength(p):
+        return p.num_ships \
+               - sum(fleet.num_ships for fleet in state.my_fleets() if fleet.destination_planet == p.ID) \
+               + sum(fleet.num_ships for fleet in state.enemy_fleets() if fleet.destination_planet == p.ID)
+
+    x,y = center_of_territory(state, my_planets_list)
+    for iteration in range(3, 12, 3):
+        neutral_planets = [(planet[0], strength(planet[0])) for planet in get_neighbors_from_point(state, x, y, state.neutral_planets(), iteration) if strength(planet[0]) > 0 ]
+        neutral_planets.sort(key=lambda x: state.planets[x[0].ID].num_ships)
+        target_planets = iter(neutral_planets)
+    
+        possible_actions = []
+    
+        try:
+            my_planet = next(my_planets)
+            target_planet, target_planet_strength = next(target_planets)
+            while True:
+                required_ships = target_planet_strength + 1
+                if my_planet.num_ships > required_ships:
+                    possible_actions.append((my_planet,target_planet,required_ships,state.distance(my_planet.ID,target_planet.ID)))
+                    #issue_order(state, my_planet.ID, target_planet.ID, required_ships)
+                    my_planet = next(my_planets)
+                    target_planet,target_planet_strength = next(target_planets)
+                else:
+                    my_planet = next(my_planets)
+    
+        except StopIteration:
+            if possible_actions:
+                def ordenation(x):
+                    result = x[2]/x[3]
+                    return result
+                possible_actions.sort(key=ordenation)
+                for action in possible_actions:
+                    if action[0].num_ships > action[2]:
+                        issue_order(state,action[0].ID,action[1].ID,action[2])
+
+        return True
 
 def defend_planet(state):
     fleets_attacking = [fleet for fleet in state.enemy_fleets() if state.planets[fleet.destination_planet].owner == 1]

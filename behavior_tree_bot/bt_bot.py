@@ -33,7 +33,7 @@ def setup_behavior_tree():
     defend_planets = Action(defend_planet)
     defend_losing = Check(losing_enemy)
     defend_abandon = Action(abandon_planet)
-    defensive_plan.child_nodes = [defend_being_attacked,defend_planets,defend_losing,defend_abandon]
+    defensive_plan.child_nodes = [defend_being_attacked,defend_planets,defend_losing, defend_abandon]
 
     '''offensive_plan = Sequence(name='Offensive Strategy')
     largest_fleet_check = Check(have_largest_fleet)
@@ -42,7 +42,7 @@ def setup_behavior_tree():
 
     greedy_a_behavior = Sequence(name='Greedy Attack')
     greedy_a_check = Check(outnumebering_enemy)
-    greedy_a_attack = Action(attack_enemy)
+    greedy_a_attack = Action(coordinate_attack_on_enemy)
     greedy_a_behavior.child_nodes = [greedy_a_check,greedy_a_attack]
 
     inter_a_behavior = Sequence(name="Intermediate Attack")
@@ -59,10 +59,14 @@ def setup_behavior_tree():
     offensive_plan.child_nodes = [greedy_a_behavior,inter_a_behavior,caut_a_behavior]
 
 
+
+
+
     spread_sequence = Sequence(name='Spread Strategy')
     neutral_planet_check = Check(if_neutral_planet_available)
+    spread_nearby = Action(spread_to_nearby_planets)
     spread_action = Action(spread_to_planets)
-    spread_sequence.child_nodes = [neutral_planet_check, spread_action]
+    spread_sequence.child_nodes = [neutral_planet_check, spread_nearby, spread_action]
 
     '''spread_sequence = Sequence(name='Spread Strategy')
     neutral_planet_check = Check(if_neutral_planet_available)
